@@ -1,6 +1,16 @@
 import { getCounterTime } from "./utils";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import counterStore, { STATUS } from "./counterStore";
+import { fromEvent, race } from "rxjs";
+import {
+  filter,
+  bufferCount,
+  debounceTime,
+  first,
+  repeat,
+  buffer,
+  map,
+} from "rxjs/operators";
 
 function App() {
   const [counterState, setCounterState] = useState(counterStore.initialState);
@@ -18,15 +28,36 @@ function App() {
     };
   }, []);
 
-  const handleStartClick = ({ target }) => {
+  const buttonEl = useRef(null);
+
+  useEffect(() => {
+    const doubleClickDuration = 300;
+    const leftClick$ = fromEvent(buttonEl.current, "click").pipe(
+      filter((event) => event.button === 0)
+    );
+    const debounce$ = leftClick$.pipe(debounceTime(doubleClickDuration));
+    const clickLimit$ = leftClick$.pipe(bufferCount(2));
+    const bufferGate$ = race(debounce$, clickLimit$).pipe(first(), repeat());
+
+    const sub = leftClick$
+      .pipe(
+        buffer(bufferGate$),
+        map((clicks) => clicks.length)
+      )
+      .subscribe((clicks) => {
+        if (clicks === 2) {
+          counterStore.wait();
+        }
+      });
+
+    return () => sub.unsubscribe();
+  }, []);
+
+  const handleStartClick = (e) => {
     counterStore.toggle(counterState.status);
   };
 
-  const handleWaitClick = ({ target }) => {
-    counterStore.wait();
-  };
-
-  const handleResetClick = ({ target }) => {
+  const handleResetClick = (e) => {
     counterStore.reset();
   };
 
@@ -48,7 +79,7 @@ function App() {
             </button>
           </li>
           <li className="actions-item">
-            <button className="btn btn-wait" onClick={handleWaitClick}>
+            <button className="btn btn-wait" ref={buttonEl}>
               Wait
             </button>
           </li>
