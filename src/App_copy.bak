@@ -1,50 +1,53 @@
 import { getCounterTime } from "./utils";
-import { useLayoutEffect, useState } from "react";
-import counterStore, { STATUS } from "./counterStore";
+import { useEffect, useState } from "react";
 
 function App() {
-  const [counterState, setCounterState] = useState(counterStore.initialState);
+  const [status, setStatus] = useState("off");
+  const [value, setValue] = useState(0);
 
-  useLayoutEffect(() => {
-    counterStore.init();
-    counterStore.subscribe(setCounterState);
-
+  useEffect(() => {
     const timerId = setInterval(() => {
-      counterStore.tick();
+      if (status === "on") {
+        const newValue = value + 1;
+        setValue(newValue);
+      }
     }, 1000);
 
     return () => {
       clearInterval(timerId);
     };
-  }, []);
+  });
 
   const handleStartClick = ({ target }) => {
-    counterStore.toggle(counterState.status);
+    const newStatus = status === "on" ? "off" : "on";
+
+    if (status !== "wait") {
+      setValue(0);
+    }
+    setStatus(newStatus);
+    setStatus(newStatus);
   };
 
   const handleWaitClick = ({ target }) => {
-    counterStore.wait();
+    setStatus("wait");
   };
 
   const handleResetClick = ({ target }) => {
-    counterStore.reset();
+    setValue(0);
+    setStatus("on");
   };
 
   return (
     <main className="App">
-      <header className="App-header">
-        <h1 className="counter-heading">Timer</h1>
-      </header>
+      <header className="App-header">Counter</header>
 
       <section>
-        <div className="tablo">
-          <p className="tablo-text">{getCounterTime(counterState.value)}</p>
-        </div>
+        <div className="tablo">{getCounterTime(value)}</div>
 
         <ul className="actions">
           <li className="actions-item">
             <button className="btn btn-start" onClick={handleStartClick}>
-              {counterState.status === STATUS.on ? "Stop" : "Start"}
+              { status === "on" ? "Stop" : "Start"}
             </button>
           </li>
           <li className="actions-item">
