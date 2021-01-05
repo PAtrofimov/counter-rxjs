@@ -1,7 +1,7 @@
 import { getCounterTime } from "./utils";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import counterStore, { STATUS } from "./counterStore";
-import { fromEvent, race } from "rxjs";
+import { fromEvent, race, interval } from "rxjs";
 import {
   filter,
   bufferCount,
@@ -18,13 +18,13 @@ function App() {
   useLayoutEffect(() => {
     counterStore.init();
     counterStore.subscribe(setCounterState);
-
-    const timerId = setInterval(() => {
+    const timer$ = interval(1000);
+    const sub = timer$.subscribe(() => {
       counterStore.tick();
-    }, 1000);
+    });
 
     return () => {
-      clearInterval(timerId);
+      sub.unsubscribe();
     };
   }, []);
 
